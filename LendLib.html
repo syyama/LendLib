@@ -4,8 +4,13 @@
 
 <body>
   <h1>Lending Library</h1>
-  <div id="categories-container" class="container">
+  <div id="lendlib" class="container">
+    <div id="categories-container" class="container">
     {{> categories}}
+    </div>
+    <div>
+    {{> list}}
+    </div>
   </div>
 </body>
 
@@ -26,5 +31,31 @@
       {{Category}}
     </div>
     {{/each}}
+  </div>
+</template>
+
+<template name="list">
+  <div id="lending_list" class="list-gruop">
+    {{#each items}}
+    <div class="lending_item list-group-item">
+      <button type="button" class="close delete_item" id="{{Name}}"></button>
+      {{Name}}
+      {{#if lendee_editing}}
+        <input type="text" id="edit_lendee" class="span-2" value="" />
+      {{else}}
+        <div class="lendee label {{LendClass}}">
+          {{Lendee}}
+        </div>
+      {{/if}}
+    </div>
+    {{/each}}
+    {{#if list_selected}}
+    <div class="list-group-item" id="btnAddItem">
+      <span class="glyphicon glyphicon-plus"></span>
+      {{#if list_adding}}
+        <input class="span-4" id="item_to_add" size="32" type="text">
+      {{/if}}
+    </div>
+    {{/if}}
   </div>
 </template>
