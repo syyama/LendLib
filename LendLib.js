@@ -3,12 +3,38 @@ lists = new Mongo.Collection("lists");
 if (Meteor.isClient) {
   ////Generic Helper Functions////
   // this function puts our cursor where it needs to be.
-  function focusText(i) {
+  function focusText(i, val) {
     i.focus();
+    i.value = val ? val : "";
     i.select();
   };
 
-  Template.lists.helpers() {
+  function selectCategory(e, t) {
+    Session.set('current_list', this._id);
+  };
+  function addItem(list_id, item_name) {
+    if(!item_name && !list_id) return;
+    lists.update({_id:list_id}, {$addToSet: {items:{Name:item_name}}});
+  };
+  function removeItem(list_id, item_name) {
+    if(!item_name && !list_id) return;
+    lists.update({_id:list_id}, {$pull: {items:{Name:item_name}}});
+  };
+  function updateLendee(list_id, item_name, lendee_name) {
+    var l = lists.findOne({"_id":list_id, "items.Name":item_name});
+    if(l && l.items) {
+      for (var i=0; i<l.items.length; i++) {
+        if(l.items[i].Name === item_name) {
+          var updateItem = {};
+          updateItem['items.' +i+ '.LentTo'] = lendee_name;
+          lists.update({'_id':list_id},{$set:updateItem});
+          break;
+        }
+      }
+    }
+  };
+
+  Template.list.helpers({
     items: function() {
       if(Session.equals('cullent_list', null))
         return null;
@@ -29,15 +55,15 @@ if (Meteor.isClient) {
     list_selected: function() {
       return ((Session.get('current_list') != null) && (!Session.equals('current_list', null)));
     },
-    list_selected: function() {
+    list_adding: function() {
       return (Session.equals('list_adding', true));
     },
-    list_selected: function() {
+    lendee_editing: function() {
       return (Session.equals('list_input', this.Name))
     }
-  };
+  });
 
-  Temlate.list.event({
+  Template.list.events({
     'click #btnAddItem': function(e, t) {
       Session.set('list_adding', true);
       Tracker.flush();
@@ -53,10 +79,10 @@ if (Meteor.isClient) {
     'focusout #item_to_add': function(e, t) {
       Session.set('list_adding', false);
     },
-    'click.delete_item': function(e, t) {
-      Session.set('list_adding', false);
+    'click .delete_item': function(e, t) {
+      Session.set(Session.get('current_list'), e.target.id);
     },
-    'click.lendee' : function(e, t) {
+    'click .lendee' : function(e, t) {
       Session.set('lendee_input', this.Name);
       Tracker.flush();
       focusText(t.find("edit_lendee"), this.LentTo);
@@ -64,7 +90,7 @@ if (Meteor.isClient) {
     'keyup #edit_lendee' : function(e, t) {
       if(e.which === 13)
       {
-        updateLendee(Session.get('current_list'), this.Name, e target.value);
+        updateLendee(Session.get('current_list'), this.Name, e.target.value);
         Session.set('lendee_input', null);
       }
       if(e.which === 27)
@@ -76,6 +102,7 @@ if (Meteor.isClient) {
 
   // We are declaring the 'adding_category' flag
   Session.set('adding_category', false);
+
 
   Template.categories.helpers({
     lists: function() {
@@ -109,7 +136,10 @@ if (Meteor.isClient) {
           Session.set('adding_category', false);
         }
       }
-    }    
+    },
+    'focusout #add-category': function(e, t) {
+      Session.set('adding_category', false);
+    }
   });
 }
 
